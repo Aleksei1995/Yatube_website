@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block title %}    
+  Последние обновления для подписчиков
+{% endblock %}
+
+{% block content %}
+  <div class="container py-5">
+    <h1> Последние обновления авторов </h1>
+    <article>
+      {% include 'includes/switcher.html' %}
+      {% for post in page_obj %}
+        {% include 'includes/text.html' %}         
+        {% if post.group %}
+          <a href="{% url 'posts:group_list' post.group.slug %}"> все записи группы </a>
+        {% endif %}          
+        {% if not forloop.last %}<hr>{% endif %}        
+      {% endfor %}
+      {% include 'includes/paginator.html' %}
+    </article>
+  </div>  
+{% endblock %}
