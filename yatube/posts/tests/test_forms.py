@@ -165,6 +165,7 @@ class CommentFormTests(TestCase):
     def setUp(self):
         self.authorized_client = Client()
         self.authorized_client.force_login(self.author)
+        self.guest_client = Client()
 
     def test_create_comment(self):
         """Валидная форма создает запись в Comment."""
@@ -189,3 +190,18 @@ class CommentFormTests(TestCase):
                 text=self.comment,
             ).exists()
         )
+
+    def test_anonymous_cant_create_comment(self):
+        comments_count = Comment.objects.count()
+        form_data = {
+            'text': self.comment,
+        }
+        self.guest_client.post(
+            reverse(
+                'posts:add_comment',
+                kwargs={'post_id': self.post.pk}
+            ),
+            data=form_data,
+            follow=True
+        )
+        self.assertEqual(Comment.objects.count(), comments_count)

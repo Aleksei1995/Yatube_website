@@ -59,11 +59,14 @@ class Comment(models.Model):
     text = models.TextField()
     created = models.DateTimeField(auto_now_add=True)
 
+    def __str__(self):
+        return f"Запись: '{self.post}', автор: '{self.author}'"
+
 
 class Follow(models.Model):
     user = models.ForeignKey(
         User,
-        on_delete=None,
+        on_delete=models.CASCADE,
         related_name='follower'
     )
     author = models.ForeignKey(
@@ -71,3 +74,11 @@ class Follow(models.Model):
         on_delete=models.CASCADE,
         related_name='following'
     )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'author'],
+                                    name='one_following'),
+            models.CheckConstraint(check=~models.Q(user=models.F('author')),
+                                   name='user_not_author')
+        ]

@@ -41,8 +41,8 @@ def profile(request, username):
     author = get_object_or_404(User, username=username)
     posts = author.posts.all()
     post_count = posts.count()
-    following = False
     user = request.user
+    following = user.is_authenticated and author.following.exists()
     if user.is_authenticated:
         if Follow.objects.filter(
             user=request.user,
@@ -62,8 +62,7 @@ def profile(request, username):
 
 def post_detail(request, post_id):
     post = get_object_or_404(Post, pk=post_id)
-    author = post.author
-    post_count = Post.objects.filter(author=author).count()
+    post_count = Post.objects.filter(author=post.author).count()
     group = post.group
     form = CommentForm(request.POST)
     comments = post.comments.all()
@@ -126,9 +125,7 @@ def add_comment(request, post_id):
 
 @login_required
 def follow_index(request):
-    follow = Follow.objects.filter(user=request.user)
-    following_author = User.objects.filter(following__in=follow)
-    posts = Post.objects.filter(author__in=following_author)
+    posts = Post.objects.filter(author__following__user=request.user)
     post_count = posts.count()
     page_obj = paginator(request, posts)
     context = {
@@ -141,9 +138,8 @@ def follow_index(request):
 @login_required
 def profile_follow(request, username):
     author = get_object_or_404(User, username=username)
-    count_followers = Follow.objects.filter(author=author).count()
-    if request.user != author and count_followers != 1:
-        Follow.objects.create(
+    if request.user != author:
+        Follow.objects.get_or_create(
             user=request.user,
             author=author,
         )

@@ -248,7 +248,8 @@ class CacheViewsTest(TestCase):
     def test_cache_index(self):
         """Проверка кэша для index."""
         response = self.authorized_client.get(reverse('posts:index'))
-        Post.objects.filter().delete()
+        Post.objects.all().delete()
+        response = self.authorized_client.get(reverse('posts:index'))
         self.assertContains(response, self.post.text)
         cache.clear()
         response = self.authorized_client.get(reverse('posts:index'))
@@ -269,10 +270,6 @@ class FollowViewsTest(TestCase):
                 text='post_text',
                 author=cls.author,
             )
-        cls.follow = Follow.objects.create(
-            user=cls.user,
-            author=cls.author,
-        )
 
     def setUp(self):
         self.authorized_client = Client()
@@ -282,35 +279,40 @@ class FollowViewsTest(TestCase):
     def test_authorized_client_can_follow(self):
         # Проверка, что авторизованный пользователь может
         # подписываться на других пользователей.
-        author = self.author
+        self.assertFalse(Follow.objects.filter(user=self.user,
+                                               author=self.author,).exists())
         response = self.authorized_client.get(reverse('posts:profile_follow',
                                               kwargs={'username':
                                                       self.author.username}))
-        count_followers = Follow.objects.count()
         self.assertEqual(response.status_code, HTTPStatus.FOUND)
-        self.assertEqual(count_followers, 1)
         self.assertTrue(Follow.objects.filter(user=self.user,
-                                              author=author,))
+                                              author=self.author,).exists())
 
     def test_authorized_client_can_unfollow(self):
         # Проверка, что авторизованный пользователь может
         # отписываться от других пользователей.
-        author = self.author
+        Follow.objects.create(user=self.user, author=self.author)
+        self.assertTrue(Follow.objects.filter(user=self.user,
+                                              author=self.author,).exists())
         response = self.authorized_client.get(reverse('posts:profile_unfollow',
                                               kwargs={'username':
                                                       self.author.username}))
-        count_followers = Follow.objects.count()
         self.assertEqual(response.status_code, HTTPStatus.FOUND)
-        self.assertEqual(count_followers, 0)
         self.assertFalse(Follow.objects.filter(user=self.user,
-                                               author=author,))
+                                               author=self.author,).exists())
 
     def test_follow_index_follower_follow(self):
         # Проверка, что записи пользователя появляются в ленте тех,
         # кто на него подписан.
+        self.authorized_client.get(reverse('posts:profile_follow',
+                                           kwargs={'username':
+                                                   self.author.username}))
         response = self.authorized_client.get(reverse('posts:follow_index'))
         post_count = response.context['post_count']
+        first_object = response.context['page_obj'][0]
+        post_text = first_object.text
         self.assertEqual(post_count, 13)
+        self.assertEqual(post_text, self.post.text)
 
     def test_follow_index_follower_unfollow(self):
         # Проверка, что записи пользователя не появляются в ленте тех,
