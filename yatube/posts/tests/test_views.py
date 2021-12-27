@@ -247,13 +247,28 @@ class CacheViewsTest(TestCase):
 
     def test_cache_index(self):
         """Проверка кэша для index."""
-        response = self.authorized_client.get(reverse('posts:index'))
         Post.objects.all().delete()
         response = self.authorized_client.get(reverse('posts:index'))
         self.assertContains(response, self.post.text)
         cache.clear()
         response = self.authorized_client.get(reverse('posts:index'))
         self.assertNotContains(response, self.post.text)
+
+    def test_cache(self):
+        """Проверка, что до сброса кэша страница та же, что до изменения"""
+        # Кажется, что не понял задание, прошу пояснить
+        response = self.authorized_client.get(reverse('posts:index'))
+        content = response.content
+        Post.objects.create(
+            text='test_cash',
+            group=self.group,
+            author=self.author
+        )
+        response = self.authorized_client.get(reverse('posts:index'))
+        self.assertEqual(response.content, content)
+        cache.clear()
+        response = self.authorized_client.get(reverse('posts:index'))
+        self.assertNotEqual(response.content, content)
 
 
 class FollowViewsTest(TestCase):
