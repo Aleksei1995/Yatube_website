@@ -247,8 +247,8 @@ class CacheViewsTest(TestCase):
 
     def test_cache_index(self):
         """Проверка кэша для index."""
-        Post.objects.all().delete()
         response = self.authorized_client.get(reverse('posts:index'))
+        Post.objects.all().delete()
         self.assertContains(response, self.post.text)
         cache.clear()
         response = self.authorized_client.get(reverse('posts:index'))
